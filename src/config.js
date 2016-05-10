@@ -9,6 +9,7 @@ import ObservableMixin from './observablemixin.js';
 import isObject from './lib/lodash/isObject.js';
 import isPlainObject from './lib/lodash/isPlainObject.js';
 import mix from './mix.js';
+import CKEditorError from './ckeditorerror.js';
 
 /**
  * Handles a configuration dictionary.
@@ -77,7 +78,7 @@ export default class Config {
 		// The target for this configuration is, for now, this object.
 		let target = this;
 
-		// The configuration name should be split into parts if it has dots. E.g: `resize.width`.
+		// The configuration name should be split into parts if it has dots. E.g. `resize.width` -> [`resize`, `width`]
 		const parts = name.toLowerCase().split( '.' );
 
 		// Take the name of the configuration out of the parts. E.g. `resize.width` -> `width`
@@ -134,8 +135,8 @@ export default class Config {
 		// The configuration name should be split into parts if it has dots. E.g. `resize.width` -> [`resize`, `width`]
 		const parts = name.toLowerCase().split( '.' );
 
-		// Take the name of the configuration from the parts. E.g. `resize.width` -> `width`
-		name = parts.pop();
+		// Take the name of the configuration out of the parts. E.g. `resize.width` -> `width`
+		let configurationName = parts.pop();
 
 		// Retrieves the source for this configuration recursively.
 		for ( let i = 0; i < parts.length; i++ ) {
@@ -149,14 +150,23 @@ export default class Config {
 		}
 
 		// Try to retrieve it from the source object.
-		if ( source && ( typeof source[ name ] != 'undefined' ) ) {
-			return source[ name ];
+		if ( source && ( typeof source[ configurationName ] != 'undefined' ) ) {
+			return source[ configurationName ];
 		}
 
-		// If not found, take it from the definition.
+		let valueFromDefinition;
+
+		// If not found, try to take it from the definition.
 		if ( this.definition ) {
-			return this.definition[ name ];
+			valueFromDefinition = this.definition.get( name );
 		}
+
+		// If still not found throw an error
+		if ( typeof valueFromDefinition == 'undefined' ) {
+			throw new CKEditorError( 'undefined-configuration-name', { name } );
+		}
+
+		return valueFromDefinition;
 	}
 
 	/**
