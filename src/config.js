@@ -136,7 +136,7 @@ export default class Config {
 		const parts = name.toLowerCase().split( '.' );
 
 		// Take the name of the configuration out of the parts. E.g. `resize.width` -> `width`
-		const configurationName = parts.pop();
+		const optionName = parts.pop();
 
 		// Retrieves the source for this configuration recursively.
 		for ( let i = 0; i < parts.length; i++ ) {
@@ -150,8 +150,8 @@ export default class Config {
 		}
 
 		// Try to retrieve it from the source object.
-		if ( source && ( typeof source[ configurationName ] != 'undefined' ) ) {
-			return source[ configurationName ];
+		if ( source && ( typeof source[ optionName ] != 'undefined' ) ) {
+			return source[ optionName ];
 		}
 
 		let valueFromDefinition;
@@ -161,9 +161,9 @@ export default class Config {
 			valueFromDefinition = this.definition.get( name );
 		}
 
-		// If still not found throw an error
+		// If still not found throw an error.
 		if ( typeof valueFromDefinition == 'undefined' ) {
-			throw new CKEditorError( 'undefined-configuration-name', { name } );
+			throw new CKEditorError( 'config-undefined-option: Undefined option', { name } );
 		}
 
 		return valueFromDefinition;

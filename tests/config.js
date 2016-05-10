@@ -189,13 +189,13 @@ describe( 'get', () => {
 	it( 'should throw exception for non existing configuration', () => {
 		expect( () => {
 			config.get( 'invalid' );
-		} ).to.throw( CKEditorError, /undefined-configuration-name/ );
+		} ).to.throw( CKEditorError, /config-undefined-option/ );
 	} );
 
 	it( 'should throw exception for non existing deep configuration', () => {
 		expect( () => {
 			config.get( 'resize.invalid.value' );
-		} ).to.throw( CKEditorError, /undefined-configuration-name/ );
+		} ).to.throw( CKEditorError, /config-undefined-option/ );
 	} );
 } );
 
