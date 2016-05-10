@@ -136,7 +136,7 @@ export default class Config {
 		const parts = name.toLowerCase().split( '.' );
 
 		// Take the name of the configuration out of the parts. E.g. `resize.width` -> `width`
-		let configurationName = parts.pop();
+		const configurationName = parts.pop();
 
 		// Retrieves the source for this configuration recursively.
 		for ( let i = 0; i < parts.length; i++ ) {
