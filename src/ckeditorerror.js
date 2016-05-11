@@ -48,4 +48,17 @@ export default class CKEditorError extends Error {
 		 */
 		this.data = data;
 	}
+
+	/**
+	 * Check if error is an instance of CKEditorError and error-name part of error.message is equal to name.
+	 *
+	 * @param {Object} error Error instance.
+	 * @param {String} name Name to compare with error-name part of error.message.
+	 * @returns {Boolean}
+	 */
+	static isErrorWithName( error, name ) {
+		let isName = new RegExp( `^${ name }(:|$)` );
+
+		return error instanceof this && isName.test( name );
+	}
 }
