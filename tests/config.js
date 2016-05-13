@@ -241,26 +241,26 @@ describe( 'define', () => {
 	} );
 
 	it( 'should be overridden by set()', () => {
-		config.define( 'test', 'default value' );
-		config.set( 'test', 'new value' );
+		config.define( 'test', 1 );
+		config.set( 'test', 2 );
 
-		expect( config ).to.have.property( 'test' ).to.equal( 'new value' );
-		expect( config.get( 'test' ) ).to.equal( 'new value' );
+		expect( config ).to.have.property( 'test' ).to.equal( 1 );
+		expect( config.get( 'test' ) ).to.equal( 2 );
 	} );
 
 	it( 'should be overridden by set() even if set was called first', () => {
-		config.set( 'test', 'new value' );
-		config.define( 'test', 'default value' );
+		config.set( 'test', 1 );
+		config.define( 'test', 2 );
 
-		expect( config ).to.have.property( 'test' ).to.equal( 'new value' );
-		expect( config.get( 'test' ) ).to.equal( 'new value' );
+		expect( config ).to.have.property( 'test' ).to.equal( 1 );
+		expect( config.get( 'test' ) ).to.equal( 2 );
 	} );
 
 	it( 'should be able to be restored in case of deep configuration', () => {
-		config.define( 'test.configuration', 'default value' );
-		config.set( 'test.configuration', 'new value' );
+		config.define( 'test.configuration', 1 );
+		config.set( 'test.configuration', 2 );
 		config.set( 'test', undefined );
 
-		expect( config.get( 'test.configuration' ) ).to.be.equal( 'default value' );
+		expect( config.get( 'test.configuration' ) ).to.equal( 1 );
 	} );
 } );
