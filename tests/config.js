@@ -244,7 +244,7 @@ describe( 'define', () => {
 		config.define( 'test', 1 );
 		config.set( 'test', 2 );
 
-		expect( config ).to.have.property( 'test' ).to.equal( 1 );
+		expect( config ).to.have.property( 'test' ).to.equal( 2 );
 		expect( config.get( 'test' ) ).to.equal( 2 );
 	} );
 
@@ -253,7 +253,7 @@ describe( 'define', () => {
 		config.define( 'test', 2 );
 
 		expect( config ).to.have.property( 'test' ).to.equal( 1 );
-		expect( config.get( 'test' ) ).to.equal( 2 );
+		expect( config.get( 'test' ) ).to.equal( 1 );
 	} );
 
 	it( 'should be able to be restored in case of deep configuration', () => {
