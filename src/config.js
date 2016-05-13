@@ -9,6 +9,7 @@ import ObservableMixin from './observablemixin.js';
 import isObject from './lib/lodash/isObject.js';
 import isPlainObject from './lib/lodash/isPlainObject.js';
 import mix from './mix.js';
+import CKEditorError from './ckeditorerror.js';
 
 /**
  * Handles a configuration dictionary.
@@ -77,10 +78,10 @@ export default class Config {
 		// The target for this configuration is, for now, this object.
 		let target = this;
 
-		// The configuration name should be split into parts if it has dots. E.g: `resize.width`.
+		// The configuration name should be split into parts if it has dots. E.g. `resize.width` -> [`resize`, `width`].
 		const parts = name.toLowerCase().split( '.' );
 
-		// Take the name of the configuration out of the parts. E.g. `resize.width` -> `width`
+		// Take the name of the configuration out of the parts. E.g. `resize.width` -> `width`.
 		name = parts.pop();
 
 		// Retrieves the final target for this configuration recursively.
@@ -131,11 +132,11 @@ export default class Config {
 		// The target for this configuration is, for now, this object.
 		let source = this;
 
-		// The configuration name should be split into parts if it has dots. E.g. `resize.width` -> [`resize`, `width`]
+		// The configuration name should be split into parts if it has dots. E.g. `resize.width` -> [`resize`, `width`].
 		const parts = name.toLowerCase().split( '.' );
 
-		// Take the name of the configuration from the parts. E.g. `resize.width` -> `width`
-		name = parts.pop();
+		// Take the name of the configuration out of the parts. E.g. `resize.width` -> `width`.
+		const optionName = parts.pop();
 
 		// Retrieves the source for this configuration recursively.
 		for ( let i = 0; i < parts.length; i++ ) {
@@ -149,14 +150,23 @@ export default class Config {
 		}
 
 		// Try to retrieve it from the source object.
-		if ( source && ( typeof source[ name ] != 'undefined' ) ) {
-			return source[ name ];
+		if ( source && ( typeof source[ optionName ] != 'undefined' ) ) {
+			return source[ optionName ];
 		}
 
-		// If not found, take it from the definition.
+		let valueFromDefinition;
+
+		// If not found, try to take it from the definition.
 		if ( this.definition ) {
-			return this.definition[ name ];
+			valueFromDefinition = this.definition.get( name );
 		}
+
+		// If still not found throw an error.
+		if ( typeof valueFromDefinition == 'undefined' ) {
+			throw new CKEditorError( 'config-undefined-option: Undefined option.', { name } );
+		}
+
+		return valueFromDefinition;
 	}
 
 	/**

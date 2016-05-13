@@ -6,6 +6,7 @@
 'use strict';
 
 import Config from '/ckeditor5/utils/config.js';
+import CKEditorError from '/ckeditor5/utils/ckeditorerror.js';
 
 let config;
 
@@ -185,12 +186,16 @@ describe( 'get', () => {
 		expect( config.get( 'resize.MINHEIGHT' ) ).to.equal( 300 );
 	} );
 
-	it( 'should return undefined for non existing configuration', () => {
-		expect( config.get( 'invalid' ) ).to.be.undefined();
+	it( 'should throw exception for non existing configuration', () => {
+		expect( () => {
+			config.get( 'invalid' );
+		} ).to.throw( CKEditorError, /config-undefined-option/ );
 	} );
 
-	it( 'should return undefined for non existing deep configuration', () => {
-		expect( config.get( 'resize.invalid.value' ) ).to.be.undefined();
+	it( 'should throw exception for non existing deep configuration', () => {
+		expect( () => {
+			config.get( 'resize.invalid.value' );
+		} ).to.throw( CKEditorError, /config-undefined-option/ );
 	} );
 } );
 
@@ -228,11 +233,34 @@ describe( 'define', () => {
 		expect( config.get( 'test' ) ).to.equal( 1 );
 	} );
 
+	it( 'should not define main config properties but still be retrieved with get() for deep configuration', () => {
+		config.define( 'test.deep.configuration', 1 );
+
+		expect( config ).to.not.have.property( 'test' );
+		expect( config.get( 'test.deep.configuration' ) ).to.equal( 1 );
+	} );
+
 	it( 'should be overridden by set()', () => {
 		config.define( 'test', 1 );
 		config.set( 'test', 2 );
 
 		expect( config ).to.have.property( 'test' ).to.equal( 2 );
 		expect( config.get( 'test' ) ).to.equal( 2 );
+	} );
+
+	it( 'should be overridden by set() even if set was called first', () => {
+		config.set( 'test', 1 );
+		config.define( 'test', 2 );
+
+		expect( config ).to.have.property( 'test' ).to.equal( 1 );
+		expect( config.get( 'test' ) ).to.equal( 1 );
+	} );
+
+	it( 'should be able to be restored in case of deep configuration', () => {
+		config.define( 'test.configuration', 1 );
+		config.set( 'test.configuration', 2 );
+		config.set( 'test', undefined );
+
+		expect( config.get( 'test.configuration' ) ).to.equal( 1 );
 	} );
 } );
