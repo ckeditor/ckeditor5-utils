@@ -6,12 +6,12 @@ const gulp = require( 'gulp' );
 const build = require( 'lodash-cli' );
 const del = require( 'del' );
 
-const DEST_PATH = 'src/lib/lodash';
+const destPath = 'src/lib/lodash';
 
 module.exports = function() {
 	const tasks = {
 		lodash() {
-			return del( DEST_PATH )
+			return del( destPath )
 				.then( buildLodash );
 		}
 	};
@@ -27,7 +27,7 @@ function buildLodash() {
 			'modularize',
 			'exports=es',
 			'--development',
-			'--output', DEST_PATH
+			'--output', destPath
 		], ( err ) => {
 			if ( err instanceof Error ) {
 				reject( err );
