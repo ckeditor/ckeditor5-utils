@@ -243,6 +243,43 @@ const ObservableMixin = {
 			boundObservables.clear();
 			boundAttributes.clear();
 		}
+	},
+
+	/**
+	 * Delegates selected events to another {@link ObservableMixin} instance.
+	 *
+	 *		A.pipe( 'eventA' ).to( B );
+	 *		A.pipe( 'eventA', 'eventB' ).to( C );
+	 *
+	 *		// eventA will also be fired by B and C along with someData.
+	 *		A.fire( 'eventA', someData );
+	 *
+	 *		// eventB will also be fired by C along with someData.
+	 *		A.fire( 'eventB', someData );
+	 *
+	 * @method utils.ObservableMixin#bind
+	 * @param {String...} bindAttrs Observable attributes that will be bound to another observable(s).
+	 * @returns {utils.BindChain}
+	 */
+	pipe( ...evtNames ) {
+		if ( !evtNames.length || !isStringArray( evtNames ) ) {
+			/**
+			 * All event names must be strings.
+			 *
+			 * @error observable-pipe-wrong-events
+			 */
+			throw new CKEditorError( 'observable-pipe-wrong-events: All event names must be strings.' );
+		}
+
+		return {
+			to: ( dest ) => {
+				for ( let name of evtNames ) {
+					dest.listenTo( this, name, ( ...args ) => {
+						dest.fire( name, ...args );
+					} );
+				}
+			}
+		};
 	}
 };
 
