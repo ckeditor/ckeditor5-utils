@@ -883,6 +883,28 @@ describe( 'Observable', () => {
 
 				expect( evts ).to.have.length( 3 );
 				assertPipe( evts[ 2 ], 'baz', obsA, obsB );
+
+				obsB.fire( 'not-piped' );
+				expect( evts ).to.have.length( 3 );
+			} );
+
+			it( 'does not forward events which are not supposed to be piped', () => {
+				const obsA = new Observable();
+				const obsB = new Observable();
+
+				obsB.pipe( 'foo', 'bar', 'baz' ).to( obsA );
+
+				let firedCounter = 0;
+				obsA.on( 'foo', () => ++firedCounter );
+				obsA.on( 'bar', () => ++firedCounter );
+				obsA.on( 'baz', () => ++firedCounter );
+
+				obsB.fire( 'foo' );
+				obsB.fire( 'bar' );
+				obsB.fire( 'baz' );
+				obsB.fire( 'not-piped' );
+
+				expect( firedCounter ).to.equal( 3 );
 			} );
 
 			it( 'supports deep event piping', ( done ) => {

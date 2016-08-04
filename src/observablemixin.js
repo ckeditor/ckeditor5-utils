@@ -246,23 +246,25 @@ const ObservableMixin = {
 	},
 
 	/**
-	 * Delegates selected events to another {@link ObservableMixin} instance.
+	 * Delegates selected events to another {@link ObservableMixin} instance. For instance:
 	 *
-	 *		A.pipe( 'eventA' ).to( B );
-	 *		A.pipe( 'eventA', 'eventB' ).to( C );
+	 *		observableA.pipe( 'eventX' ).to( observableB );
+	 *		observableA.pipe( 'eventX', 'eventY' ).to( observableC );
 	 *
-	 *		// eventA will also be fired by B and C along with someData.
-	 *		A.fire( 'eventA', someData );
+	 * then `eventX` is piped (fired by) `observableB` and `observableC` along with `customData`:
 	 *
-	 *		// eventB will also be fired by C along with someData.
-	 *		A.fire( 'eventB', someData );
+	 *		observableA.fire( 'eventX', customData );
 	 *
-	 * @method utils.ObservableMixin#bind
-	 * @param {String...} bindAttrs Observable attributes that will be bound to another observable(s).
-	 * @returns {utils.BindChain}
+	 * and `eventY` is piped (fired by) `observableC` along with `customData`:
+	 *
+	 *		observableA.fire( 'eventY', customData );
+	 *
+	 * @method utils.ObservableMixin#pipe
+	 * @param {String...} events Observable event names that will be piped to another observable.
+	 * @returns {utils.ObservableMixin.pipe#to}
 	 */
-	pipe( ...evtNames ) {
-		if ( !evtNames.length || !isStringArray( evtNames ) ) {
+	pipe( ...events ) {
+		if ( !events.length || !isStringArray( events ) ) {
 			/**
 			 * All event names must be strings.
 			 *
@@ -272,10 +274,16 @@ const ObservableMixin = {
 		}
 
 		return {
-			to: ( dest ) => {
-				for ( let name of evtNames ) {
-					dest.listenTo( this, name, ( ...args ) => {
-						dest.fire( name, ...args );
+			/**
+			 * Selects destination for {@link utils.ObservableMixin#pipe} events.
+			 *
+			 * @method utils.ObservableMixin.pipe#to
+			 * @param {ObservableMixin} destination An `ObservableMixin` instance which is the destination for piped events.
+			 */
+			to: ( destination ) => {
+				for ( let eventName of events ) {
+					destination.listenTo( this, eventName, ( ...args ) => {
+						destination.fire( eventName, ...args );
 					} );
 				}
 			}
