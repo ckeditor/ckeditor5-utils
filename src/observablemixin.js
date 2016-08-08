@@ -243,6 +243,51 @@ const ObservableMixin = {
 			boundObservables.clear();
 			boundAttributes.clear();
 		}
+	},
+
+	/**
+	 * Delegates selected events to another {@link ObservableMixin} instance. For instance:
+	 *
+	 *		observableA.pipe( 'eventX' ).to( observableB );
+	 *		observableA.pipe( 'eventX', 'eventY' ).to( observableC );
+	 *
+	 * then `eventX` is piped (fired by) `observableB` and `observableC` along with `customData`:
+	 *
+	 *		observableA.fire( 'eventX', customData );
+	 *
+	 * and `eventY` is piped (fired by) `observableC` along with `customData`:
+	 *
+	 *		observableA.fire( 'eventY', customData );
+	 *
+	 * @method utils.ObservableMixin#pipe
+	 * @param {String...} events Observable event names that will be piped to another observable.
+	 * @returns {utils.ObservableMixin.pipe#to}
+	 */
+	pipe( ...events ) {
+		if ( !events.length || !isStringArray( events ) ) {
+			/**
+			 * All event names must be strings.
+			 *
+			 * @error observable-pipe-wrong-events
+			 */
+			throw new CKEditorError( 'observable-pipe-wrong-events: All event names must be strings.' );
+		}
+
+		return {
+			/**
+			 * Selects destination for {@link utils.ObservableMixin#pipe} events.
+			 *
+			 * @method utils.ObservableMixin.pipe#to
+			 * @param {ObservableMixin} destination An `ObservableMixin` instance which is the destination for piped events.
+			 */
+			to: ( destination ) => {
+				for ( let eventName of events ) {
+					destination.listenTo( this, eventName, ( ...args ) => {
+						destination.fire( eventName, ...args );
+					} );
+				}
+			}
+		};
 	}
 };
 

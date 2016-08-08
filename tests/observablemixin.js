@@ -808,4 +808,131 @@ describe( 'Observable', () => {
 			);
 		} );
 	} );
+
+	describe( 'pipe', () => {
+		it( 'should throw when event names are not strings', () => {
+			const obs = new Observable();
+
+			expect( () => {
+				obs.pipe();
+			} ).to.throw( CKEditorError, /observable-pipe-wrong-events/ );
+
+			expect( () => {
+				obs.pipe( new Date() );
+			} ).to.throw( CKEditorError, /observable-pipe-wrong-events/ );
+
+			expect( () => {
+				obs.pipe( 'color', new Date() );
+			} ).to.throw( CKEditorError, /observable-pipe-wrong-events/ );
+		} );
+
+		it( 'should chain for a single event', () => {
+			const obs = new Observable();
+
+			expect( obs.pipe( 'foo' ) ).to.contain.keys( 'to' );
+		} );
+
+		it( 'should chain for multiple events', () => {
+			const obs = new Observable();
+
+			expect( obs.pipe( 'foo', 'bar' ) ).to.contain.keys( 'to' );
+		} );
+
+		describe( 'to', () => {
+			it( 'forwards an event to another observable', ( done ) => {
+				const obsA = new Observable();
+				const obsB = new Observable();
+
+				obsB.pipe( 'foo' ).to( obsA );
+
+				obsA.on( 'foo', ( ...args ) => {
+					assertPipe( args, 'foo', obsA, obsB );
+					done();
+				} );
+
+				obsB.fire( 'foo' );
+			} );
+
+			it( 'forwards multiple events to another observable', () => {
+				const obsA = new Observable();
+				const obsB = new Observable();
+
+				obsB.pipe( 'foo', 'bar', 'baz' ).to( obsA );
+
+				const evts = [];
+
+				function recordEvent( ...args ) {
+					evts.push( args );
+				}
+
+				obsA.on( 'foo', recordEvent );
+				obsA.on( 'bar', recordEvent );
+				obsA.on( 'baz', recordEvent );
+
+				obsB.fire( 'foo' );
+
+				expect( evts ).to.have.length( 1 );
+				assertPipe( evts[ 0 ], 'foo', obsA, obsB );
+
+				obsB.fire( 'bar' );
+
+				expect( evts ).to.have.length( 2 );
+				assertPipe( evts[ 1 ], 'bar', obsA, obsB );
+
+				obsB.fire( 'baz' );
+
+				expect( evts ).to.have.length( 3 );
+				assertPipe( evts[ 2 ], 'baz', obsA, obsB );
+
+				obsB.fire( 'not-piped' );
+				expect( evts ).to.have.length( 3 );
+			} );
+
+			it( 'does not forward events which are not supposed to be piped', () => {
+				const obsA = new Observable();
+				const obsB = new Observable();
+
+				obsB.pipe( 'foo', 'bar', 'baz' ).to( obsA );
+
+				let firedCounter = 0;
+				obsA.on( 'foo', () => ++firedCounter );
+				obsA.on( 'bar', () => ++firedCounter );
+				obsA.on( 'baz', () => ++firedCounter );
+
+				obsB.fire( 'foo' );
+				obsB.fire( 'bar' );
+				obsB.fire( 'baz' );
+				obsB.fire( 'not-piped' );
+
+				expect( firedCounter ).to.equal( 3 );
+			} );
+
+			it( 'supports deep event piping', ( done ) => {
+				const obsA = new Observable();
+				const obsB = new Observable();
+				const obsBA = new Observable();
+
+				obsBA.pipe( 'foo' ).to( obsB );
+				obsB.pipe( 'foo' ).to( obsA );
+
+				obsA.on( 'foo', ( ...args ) => {
+					assertPipe( args, 'foo', obsA, obsB, obsBA );
+					done();
+				} );
+
+				obsBA.fire( 'foo' );
+			} );
+		} );
+	} );
 } );
+
+function assertPipe( evtArgs, expectedName, ...observables ) {
+	let pipeNumber = 0;
+
+	for ( let observable of observables ) {
+		expect( evtArgs[ pipeNumber ].name ).to.equal( expectedName );
+		expect( evtArgs[ pipeNumber ].source ).to.equal( observable );
+
+		++pipeNumber;
+	}
+}
