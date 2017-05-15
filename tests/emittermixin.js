@@ -377,6 +377,44 @@ describe( 'EmitterMixin', () => {
 			sinon.assert.calledTwice( spyBar );
 			sinon.assert.calledThrice( spyFoo2 );
 		} );
+
+		it( 'should remove all callbacks for given event name', () => {
+			let spyFoo = sinon.spy();
+			let spyBar = sinon.spy();
+			let spyAbc = sinon.spy();
+
+			emitter.on( 'foo', spyFoo );
+			emitter.on( 'foo:bar', spyBar );
+			emitter.on( 'abc', spyAbc );
+
+			emitter.off( 'foo' );
+
+			emitter.fire( 'foo' );
+			emitter.fire( 'abc' );
+
+			sinon.assert.notCalled( spyFoo );
+			sinon.assert.notCalled( spyBar );
+			sinon.assert.calledOnce( spyAbc );
+		} );
+
+		it( 'should remove all callbacks for all events', () => {
+			let spyFoo = sinon.spy();
+			let spyBar = sinon.spy();
+			let spyAbc = sinon.spy();
+
+			emitter.on( 'foo', spyFoo );
+			emitter.on( 'foo:bar', spyBar );
+			emitter.on( 'abc', spyAbc );
+
+			emitter.off();
+
+			emitter.fire( 'foo' );
+			emitter.fire( 'abc' );
+
+			sinon.assert.notCalled( spyFoo );
+			sinon.assert.notCalled( spyBar );
+			sinon.assert.notCalled( spyAbc );
+		} );
 	} );
 
 	describe( 'listenTo', () => {
@@ -520,6 +558,25 @@ describe( 'EmitterMixin', () => {
 
 			sinon.assert.notCalled( spyFoo );
 			sinon.assert.calledOnce( spyBar );
+		} );
+
+		it( 'should stop callbacks added by on()', () => {
+			let spyFoo = sinon.spy();
+			let spyBar = sinon.spy();
+			let spyAbc = sinon.spy();
+
+			emitter.on( 'foo', spyFoo );
+			emitter.on( 'foo:bar', spyBar );
+			emitter.on( 'abc', spyAbc );
+
+			emitter.stopListening();
+
+			emitter.fire( 'foo' );
+			emitter.fire( 'abc' );
+
+			sinon.assert.notCalled( spyFoo );
+			sinon.assert.notCalled( spyBar );
+			sinon.assert.notCalled( spyAbc );
 		} );
 	} );
 

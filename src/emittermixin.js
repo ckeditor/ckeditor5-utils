@@ -99,24 +99,37 @@ const EmitterMixin = {
 	},
 
 	/**
-	 * Stops executing the callback on the given event.
+	 * Removes the callback for the given event. It can be used at different levels:
+	 *
+	 * * To stop executing given callback, with given context.
+	 * * To stop executing given callback.
+	 * * To stop executing all callbacks for given event.
+	 * * To stop executing all callbacks for this emitter.
 	 *
 	 * @method #off
-	 * @param {String} event The name of the event.
-	 * @param {Function} callback The function to stop being called.
+	 * @param {String} [event] The name of the event.
+	 * @param {Function} [callback] The function to stop being called.
 	 * @param {Object} [context] The context object to be removed, pared with the given callback. To handle cases where
 	 * the same callback is used several times with different contexts.
 	 */
 	off( event, callback, context ) {
-		const lists = getCallbacksListsForNamespace( this, event );
+		if ( !event ) {
+			const events = getEvents( this );
 
-		for ( let callbacks of lists ) {
-			for ( let i = 0; i < callbacks.length; i++ ) {
-				if ( callbacks[ i ].callback == callback ) {
-					if ( !context || context == callbacks[ i ].context ) {
-						// Remove the callback from the list (fixing the next index).
-						callbacks.splice( i, 1 );
-						i--;
+			for ( const event in events ) {
+				this.off( event );
+			}
+		} else {
+			const lists = getCallbacksListsForNamespace( this, event );
+
+			for ( const callbacks of lists ) {
+				for ( let i = 0; i < callbacks.length; i++ ) {
+					if ( !callback || callbacks[ i ].callback == callback ) {
+						if ( !context || context == callbacks[ i ].context ) {
+							// Remove the callback from the list (fixing the next index).
+							callbacks.splice( i, 1 );
+							i--;
+						}
 					}
 				}
 			}
@@ -137,7 +150,7 @@ const EmitterMixin = {
 	 * @param {Object} [options.context] The object that represents `this` in the callback. Defaults to the object firing the event.
 	 */
 	listenTo( emitter, event, callback, options ) {
-		let emitters, emitterId, emitterInfo, eventCallbacks;
+		let emitters, emitterId, emitterInfo;
 
 		// _listeningTo contains a list of emitters that this object is listening to.
 		// This list has the following format:
@@ -165,25 +178,30 @@ const EmitterMixin = {
 
 		emitterId = _getEmitterId( emitter );
 
-		if ( !( emitterInfo = emitters[ emitterId ] ) ) {
-			emitterInfo = emitters[ emitterId ] = {
+		if ( !emitters[ emitterId ] ) {
+			emitters[ emitterId ] = {
 				emitter: emitter,
 				callbacks: {}
 			};
 		}
 
-		if ( !( eventCallbacks = emitterInfo.callbacks[ event ] ) ) {
-			eventCallbacks = emitterInfo.callbacks[ event ] = [];
+		emitterInfo = emitters[ emitterId ];
+
+		if ( !emitterInfo.callbacks[ event ] ) {
+			emitterInfo.callbacks[ event ] = [];
 		}
 
-		eventCallbacks.push( callback );
+		emitterInfo.callbacks[ event ].push( callback );
 
 		// Finally register the callback to the event.
 		emitter.on( event, callback, options );
 	},
 
 	/**
-	 * Stops listening for events. It can be used at different levels:
+	 * Stops listening for events. If executed without any parameters, stops listening to all emitters, including
+	 * itself (so to the events added by {@link #on}).
+	 *
+	 * The method can be used at different levels:
 	 *
 	 * * To stop listening to a specific callback.
 	 * * To stop listening to a specific event.
@@ -198,6 +216,10 @@ const EmitterMixin = {
 	 * `event`.
 	 */
 	stopListening( emitter, event, callback ) {
+		if ( !emitter ) {
+			this.off();
+		}
+
 		let emitters = this[ _listeningTo ];
 		let emitterId = emitter && _getEmitterId( emitter );
 		let emitterInfo = emitters && emitterId && emitters[ emitterId ];
@@ -217,6 +239,7 @@ const EmitterMixin = {
 			while ( ( callback = eventCallbacks.pop() ) ) {
 				emitter.off( event, callback );
 			}
+
 			delete emitterInfo.callbacks[ event ];
 		}
 		// Only `emitter` provided. off() all events for that emitter.
@@ -224,6 +247,7 @@ const EmitterMixin = {
 			for ( event in emitterInfo.callbacks ) {
 				this.stopListening( emitter, event );
 			}
+
 			delete emitters[ emitterId ];
 		}
 		// No params provided. off() all emitters.
@@ -231,6 +255,7 @@ const EmitterMixin = {
 			for ( emitterId in emitters ) {
 				this.stopListening( emitters[ emitterId ].emitter );
 			}
+
 			delete this[ _listeningTo ];
 		}
 	},
@@ -323,8 +348,8 @@ const EmitterMixin = {
 					this._delegations = new Map();
 				}
 
-				for ( let eventName of events ) {
-					let destinations = this._delegations.get( eventName );
+				for ( const eventName of events ) {
+					const destinations = this._delegations.get( eventName );
 
 					if ( !destinations ) {
 						this._delegations.set( eventName, new Map( [ [ emitter, nameOrFunction ] ] ) );
