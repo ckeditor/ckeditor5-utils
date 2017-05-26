@@ -23,7 +23,16 @@ const env = {
 	 * @static
 	 * @member {Boolean} module:utils/env~env#mac
 	 */
-	mac: isMac( userAgent )
+	mac: isMac( userAgent ),
+
+	/**
+	 * Indicates that application is running in a WebKit-based browser, like Safari,
+	 * or Blink-based browser, like Chrome.
+	 *
+	 * @static
+	 * @member {Boolean} module:utils/env~env#webkit
+	 */
+	webkit: isWebkit( userAgent )
 };
 
 export default env;
@@ -36,4 +45,15 @@ export default env;
  */
 export function isMac( userAgent ) {
 	return userAgent.indexOf( 'macintosh' ) > -1;
+}
+
+/**
+ * Checks if User Agent represented by the string is a WebKit-based browser, like Safari,
+ * or Blink-based browser, like Chrome.
+ *
+ * @param {String} userAgent **Lowercase** `navigator.userAgent` string.
+ * @returns {Boolean} Whether User Agent is running on Macintosh or not.
+ */
+export function isWebkit( userAgent ) {
+	return userAgent.indexOf( 'applewebkit' ) > -1;
 }
