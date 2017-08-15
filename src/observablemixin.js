@@ -197,7 +197,7 @@ const ObservableMixin = {
 	 */
 	unbind( ...unbindAttrs ) {
 		// Nothing to do here if not inited yet.
-		if ( !this[attributesSymbol] ) {
+		if ( !this[ attributesSymbol ] ) {
 			return;
 		}
 
@@ -356,7 +356,7 @@ export default ObservableMixin;
 // @param {module:utils/observablemixin~ObservableMixin} observable
 function initObservable( observable ) {
 	// Do nothing if already inited.
-	if ( observable[attributesSymbol] ) {
+	if ( observable[ attributesSymbol ] ) {
 		return;
 	}
 
