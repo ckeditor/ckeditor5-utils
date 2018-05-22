@@ -23,7 +23,15 @@ const env = {
 	 * @static
 	 * @member {Boolean} module:utils/env~env#isMac
 	 */
-	isMac: isMac( userAgent )
+	isMac: isMac( userAgent ),
+
+	/**
+	 * Indicates that application is running on Apple iOS device.
+	 *
+	 * @static
+	 * @member {Boolean} module:utils/env~env#isIOS
+	 */
+	isIOS: isIOS( userAgent )
 };
 
 export default env;
@@ -36,4 +44,14 @@ export default env;
  */
 export function isMac( userAgent ) {
 	return userAgent.indexOf( 'macintosh' ) > -1;
+}
+
+/**
+ * Checks if User Agent represented by the string is running on Apple iOS.
+ *
+ * @param {String} userAgent **Lowercase** `navigator.userAgent` string.
+ * @returns {Boolean} Whether User Agent is running on Macintosh or not.
+ */
+export function isIOS( userAgent ) {
+	return /(ipad|iphone|ipod)/.test( userAgent );
 }
