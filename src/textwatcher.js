@@ -23,13 +23,10 @@ export default class TextWatcher {
 	 * Creates a text watcher instance.
 	 * @param {module:engine/model/model~Model} model
 	 * @param {Function} testCallback The function used to match the text.
-	 * @param {Function} textMatcherCallback The function used to process matched text.
 	 */
-	constructor( model, testCallback, textMatcherCallback ) {
+	constructor( model, testCallback ) {
 		this.model = model;
 		this.testCallback = testCallback;
-		this.textMatcher = textMatcherCallback;
-
 		this.hasMatch = false;
 
 		this._startListening();
@@ -97,14 +94,12 @@ export default class TextWatcher {
 		this.hasMatch = textHasMatch;
 
 		if ( textHasMatch ) {
-			const matched = this.textMatcher( text );
-
 			/**
 			 * Fired whenever the text watcher found a match.
 			 *
 			 * @event matched
 			 */
-			this.fire( 'matched', { text, matched } );
+			this.fire( 'matched', { text } );
 		}
 	}
 
