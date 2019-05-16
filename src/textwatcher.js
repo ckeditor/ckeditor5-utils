@@ -21,12 +21,12 @@ import EmitterMixin from '@ckeditor/ckeditor5-utils/src/emittermixin';
 export default class TextWatcher {
 	/**
 	 * Creates a text watcher instance.
-	 * @param {module:core/editor/editor~Editor} editor
+	 * @param {module:engine/model/model~Model} model
 	 * @param {Function} testCallback The function used to match the text.
 	 * @param {Function} textMatcherCallback The function used to process matched text.
 	 */
-	constructor( editor, testCallback, textMatcherCallback ) {
-		this.editor = editor;
+	constructor( model, testCallback, textMatcherCallback ) {
+		this.model = model;
 		this.testCallback = testCallback;
 		this.textMatcher = textMatcherCallback;
 
@@ -36,23 +36,15 @@ export default class TextWatcher {
 	}
 
 	/**
-	 * The last matched text.
-	 *
-	 * @property {String}
-	 */
-	get last() {
-		return this._getText();
-	}
-
-	/**
 	 * Starts listening to the editor for typing and selection events.
 	 *
 	 * @private
 	 */
 	_startListening() {
-		const editor = this.editor;
+		const model = this.model;
+		const document = model.document;
 
-		editor.model.document.selection.on( 'change:range', ( evt, { directChange } ) => {
+		document.selection.on( 'change:range', ( evt, { directChange } ) => {
 			// Indirect changes (i.e. when the user types or external changes are applied) are handled in the document's change event.
 			if ( !directChange ) {
 				return;
@@ -61,7 +53,7 @@ export default class TextWatcher {
 			this._evaluateTextBeforeSelection();
 		} );
 
-		editor.model.document.on( 'change:data', ( evt, batch ) => {
+		document.on( 'change:data', ( evt, batch ) => {
 			if ( batch.type == 'transparent' ) {
 				return false;
 			}
@@ -113,9 +105,9 @@ export default class TextWatcher {
 	 * @private
 	 */
 	_getText() {
-		const editor = this.editor;
-		const model = editor.model;
-		const selection = model.document.selection;
+		const model = this.model;
+		const document = model.document;
+		const selection = document.selection;
 
 		// Do nothing if the selection is not collapsed.
 		if ( !selection.isCollapsed ) {
@@ -138,7 +130,7 @@ export default class TextWatcher {
 export function _getText( range ) {
 	return Array.from( range.getItems() ).reduce( ( rangeText, node ) => {
 		if ( node.is( 'softBreak' ) ) {
-			// Trim text to softBreak
+			// Trim text to a softBreak.
 			return '';
 		}
 
