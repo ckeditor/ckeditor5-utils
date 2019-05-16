@@ -50,12 +50,22 @@ export default class TextWatcher {
 				return;
 			}
 
+			// Act only on collapsed selection.
+			if ( !document.selection.isCollapsed ) {
+				if ( this.hasMatch ) {
+					this.fire( 'unmatched' );
+					this.hasMatch = false;
+				}
+
+				return;
+			}
+
 			this._evaluateTextBeforeSelection();
 		} );
 
 		document.on( 'change:data', ( evt, batch ) => {
 			if ( batch.type == 'transparent' ) {
-				return false;
+				return;
 			}
 
 			this._evaluateTextBeforeSelection();
@@ -108,11 +118,6 @@ export default class TextWatcher {
 		const model = this.model;
 		const document = model.document;
 		const selection = document.selection;
-
-		// Do nothing if the selection is not collapsed.
-		if ( !selection.isCollapsed ) {
-			return;
-		}
 
 		const rangeBeforeSelection = model.createRange( model.createPositionAt( selection.focus.parent, 0 ), selection.focus );
 

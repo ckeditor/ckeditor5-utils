@@ -48,7 +48,7 @@ describe( 'TextWatcher', () => {
 			watcher.on( 'unmatched', unmatchedSpy );
 		} );
 
-		it( 'should evaluate text before selection for data changes', () => {
+		it( 'should evaluate text before caret for data changes', () => {
 			model.change( writer => {
 				writer.insertText( '@', doc.selection.getFirstPosition() );
 			} );
@@ -57,6 +57,37 @@ describe( 'TextWatcher', () => {
 			sinon.assert.calledWithExactly( testCallbackStub, 'foo @' );
 		} );
 
+		it( 'should not evaluate text for not collapsed selection', () => {
+			model.change( writer => {
+				const start = writer.createPositionAt( doc.getRoot().getChild( 0 ), 0 );
+
+				writer.setSelection( writer.createRange( start, start.getShiftedBy( 1 ) ) );
+			} );
+
+			sinon.assert.notCalled( testCallbackStub );
+		} );
+
+		it( 'should fire "umatched" event when selection is expanded', () => {
+			testCallbackStub.returns( true );
+
+			model.change( writer => {
+				writer.insertText( '@', doc.selection.getFirstPosition() );
+			} );
+
+			sinon.assert.calledOnce( testCallbackStub );
+			sinon.assert.calledOnce( matchedSpy );
+			sinon.assert.notCalled( unmatchedSpy );
+
+			model.change( writer => {
+				const start = writer.createPositionAt( doc.getRoot().getChild( 0 ), 0 );
+
+				writer.setSelection( writer.createRange( start, start.getShiftedBy( 1 ) ) );
+			} );
+
+			sinon.assert.calledOnce( testCallbackStub );
+			sinon.assert.calledOnce( matchedSpy );
+			sinon.assert.calledOnce( unmatchedSpy );
+		} );
 		it( 'should evaluate text for selection changes', () => {
 			model.change( writer => {
 				writer.setSelection( doc.getRoot().getChild( 0 ), 1 );
@@ -64,6 +95,21 @@ describe( 'TextWatcher', () => {
 
 			sinon.assert.calledOnce( testCallbackStub );
 			sinon.assert.calledWithExactly( testCallbackStub, 'f' );
+		} );
+
+		it( 'should evaluate text before caret up to <softBreak>', () => {
+			model.schema.register( 'softBreak', {
+				allowWhere: '$text',
+				isInline: true
+			} );
+
+			model.change( writer => {
+				writer.insertElement( 'softBreak', doc.selection.getFirstPosition() );
+				writer.insertText( '@', doc.selection.getFirstPosition() );
+			} );
+
+			sinon.assert.calledOnce( testCallbackStub );
+			sinon.assert.calledWithExactly( testCallbackStub, '@' );
 		} );
 
 		it( 'should not evaluate text for transparent batches', () => {
