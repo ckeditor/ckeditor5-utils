@@ -120,14 +120,11 @@ export default class TextWatcher {
 	}
 }
 
-/**
- * Returns the whole text from a given range by adding all data from the text nodes together.
- *
- * @protected
- * @param {module:engine/model/range~Range} range
- * @returns {String}
- */
-export function _getText( range ) {
+// Returns the whole text from a given range by adding all data from the text nodes together.
+//
+// @param {module:engine/model/range~Range} range
+// @returns {String}
+function _getText( range ) {
 	return Array.from( range.getItems() ).reduce( ( rangeText, node ) => {
 		if ( node.is( 'softBreak' ) ) {
 			// Trim text to a softBreak.
