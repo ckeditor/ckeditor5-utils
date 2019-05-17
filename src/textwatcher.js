@@ -13,7 +13,8 @@ import EmitterMixin from '@ckeditor/ckeditor5-utils/src/emittermixin';
 /**
  * The text watcher feature.
  *
- * Fires {@link module:mention/textwatcher~TextWatcher#event:matched `matched`} and
+ * Fires {@link module:mention/textwatcher~TextWatcher#event:matched:data `matched:data`},
+ * {@link module:mention/textwatcher~TextWatcher#event:matched:selection `matched:selection`} and
  * {@link module:mention/textwatcher~TextWatcher#event:unmatched `unmatched`} events on typing or selection changes.
  *
  * @private
@@ -72,7 +73,8 @@ export default class TextWatcher {
 	/**
 	 * Checks the editor content for matched text.
 	 *
-	 * @fires matched
+	 * @fires matched:data
+	 * @fires matched:selection
 	 * @fires unmatched
 	 *
 	 * @private
