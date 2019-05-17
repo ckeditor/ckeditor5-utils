@@ -11,6 +11,7 @@ import TextWatcher from '../src/textwatcher';
 
 describe( 'TextWatcher', () => {
 	let editor, model, doc;
+	let watcher, matchedDataSpy, matchedSelectionSpy, unmatchedSpy, testCallbackStub;
 
 	testUtils.createSinonSandbox();
 
@@ -21,7 +22,19 @@ describe( 'TextWatcher', () => {
 				model = editor.model;
 				doc = model.document;
 
+				testCallbackStub = sinon.stub();
+				matchedDataSpy = sinon.spy();
+				matchedSelectionSpy = sinon.spy();
+				unmatchedSpy = sinon.spy();
+
 				model.schema.register( 'paragraph', { inheritAllFrom: '$block' } );
+
+				setData( model, '<paragraph>foo []</paragraph>' );
+
+				watcher = new TextWatcher( model, testCallbackStub, () => {} );
+				watcher.on( 'matched:data', matchedDataSpy );
+				watcher.on( 'matched:selection', matchedSelectionSpy );
+				watcher.on( 'unmatched', unmatchedSpy );
 			} );
 	} );
 
@@ -33,21 +46,7 @@ describe( 'TextWatcher', () => {
 		}
 	} );
 
-	describe( 'events', () => {
-		let watcher, matchedSpy, unmatchedSpy, testCallbackStub;
-
-		beforeEach( () => {
-			testCallbackStub = sinon.stub();
-			matchedSpy = sinon.spy();
-			unmatchedSpy = sinon.spy();
-
-			setData( model, '<paragraph>foo []</paragraph>' );
-
-			watcher = new TextWatcher( model, testCallbackStub, () => {} );
-			watcher.on( 'matched', matchedSpy );
-			watcher.on( 'unmatched', unmatchedSpy );
-		} );
-
+	describe( 'testCallback', () => {
 		it( 'should evaluate text before caret for data changes', () => {
 			model.change( writer => {
 				writer.insertText( '@', doc.selection.getFirstPosition() );
@@ -67,27 +66,6 @@ describe( 'TextWatcher', () => {
 			sinon.assert.notCalled( testCallbackStub );
 		} );
 
-		it( 'should fire "umatched" event when selection is expanded', () => {
-			testCallbackStub.returns( true );
-
-			model.change( writer => {
-				writer.insertText( '@', doc.selection.getFirstPosition() );
-			} );
-
-			sinon.assert.calledOnce( testCallbackStub );
-			sinon.assert.calledOnce( matchedSpy );
-			sinon.assert.notCalled( unmatchedSpy );
-
-			model.change( writer => {
-				const start = writer.createPositionAt( doc.getRoot().getChild( 0 ), 0 );
-
-				writer.setSelection( writer.createRange( start, start.getShiftedBy( 1 ) ) );
-			} );
-
-			sinon.assert.calledOnce( testCallbackStub );
-			sinon.assert.calledOnce( matchedSpy );
-			sinon.assert.calledOnce( unmatchedSpy );
-		} );
 		it( 'should evaluate text for selection changes', () => {
 			model.change( writer => {
 				writer.setSelection( doc.getRoot().getChild( 0 ), 1 );
@@ -119,8 +97,10 @@ describe( 'TextWatcher', () => {
 
 			sinon.assert.notCalled( testCallbackStub );
 		} );
+	} );
 
-		it( 'should fire "matched" event when test callback returns true', () => {
+	describe( 'events', () => {
+		it( 'should fire "matched:data" event when test callback returns true for model data changes', () => {
 			testCallbackStub.returns( true );
 
 			model.change( writer => {
@@ -128,7 +108,25 @@ describe( 'TextWatcher', () => {
 			} );
 
 			sinon.assert.calledOnce( testCallbackStub );
-			sinon.assert.calledOnce( matchedSpy );
+			sinon.assert.calledOnce( matchedDataSpy );
+			sinon.assert.notCalled( matchedSelectionSpy );
+			sinon.assert.notCalled( unmatchedSpy );
+		} );
+
+		it( 'should fire "matched:selection" event when test callback returns true for model data changes', () => {
+			testCallbackStub.returns( true );
+
+			model.enqueueChange( 'transparent', writer => {
+				writer.insertText( '@', doc.selection.getFirstPosition() );
+			} );
+
+			model.change( writer => {
+				writer.setSelection( doc.getRoot().getChild( 0 ), 0 );
+			} );
+
+			sinon.assert.calledOnce( testCallbackStub );
+			sinon.assert.notCalled( matchedDataSpy );
+			sinon.assert.calledOnce( matchedSelectionSpy );
 			sinon.assert.notCalled( unmatchedSpy );
 		} );
 
@@ -140,7 +138,8 @@ describe( 'TextWatcher', () => {
 			} );
 
 			sinon.assert.calledOnce( testCallbackStub );
-			sinon.assert.notCalled( matchedSpy );
+			sinon.assert.notCalled( matchedDataSpy );
+			sinon.assert.notCalled( matchedSelectionSpy );
 			sinon.assert.notCalled( unmatchedSpy );
 		} );
 
@@ -152,7 +151,7 @@ describe( 'TextWatcher', () => {
 			} );
 
 			sinon.assert.calledOnce( testCallbackStub );
-			sinon.assert.calledOnce( matchedSpy );
+			sinon.assert.calledOnce( matchedDataSpy );
 			sinon.assert.notCalled( unmatchedSpy );
 
 			testCallbackStub.returns( false );
@@ -162,7 +161,31 @@ describe( 'TextWatcher', () => {
 			} );
 
 			sinon.assert.calledTwice( testCallbackStub );
-			sinon.assert.calledOnce( matchedSpy );
+			sinon.assert.calledOnce( matchedDataSpy );
+			sinon.assert.calledOnce( unmatchedSpy );
+		} );
+
+		it( 'should fire "umatched" event when selection is expanded', () => {
+			testCallbackStub.returns( true );
+
+			model.change( writer => {
+				writer.insertText( '@', doc.selection.getFirstPosition() );
+			} );
+
+			sinon.assert.calledOnce( testCallbackStub );
+			sinon.assert.calledOnce( matchedDataSpy );
+			sinon.assert.notCalled( matchedSelectionSpy );
+			sinon.assert.notCalled( unmatchedSpy );
+
+			model.change( writer => {
+				const start = writer.createPositionAt( doc.getRoot().getChild( 0 ), 0 );
+
+				writer.setSelection( writer.createRange( start, start.getShiftedBy( 1 ) ) );
+			} );
+
+			sinon.assert.calledOnce( testCallbackStub );
+			sinon.assert.calledOnce( matchedDataSpy );
+			sinon.assert.notCalled( matchedSelectionSpy );
 			sinon.assert.calledOnce( unmatchedSpy );
 		} );
 	} );

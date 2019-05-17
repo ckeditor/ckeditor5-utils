@@ -57,7 +57,7 @@ export default class TextWatcher {
 				return;
 			}
 
-			this._evaluateTextBeforeSelection();
+			this._evaluateTextBeforeSelection( 'selection' );
 		} );
 
 		document.on( 'change:data', ( evt, batch ) => {
@@ -65,7 +65,7 @@ export default class TextWatcher {
 				return;
 			}
 
-			this._evaluateTextBeforeSelection();
+			this._evaluateTextBeforeSelection( 'data' );
 		} );
 	}
 
@@ -77,7 +77,7 @@ export default class TextWatcher {
 	 *
 	 * @private
 	 */
-	_evaluateTextBeforeSelection() {
+	_evaluateTextBeforeSelection( suffix ) {
 		const text = this._getText();
 
 		const textHasMatch = this.testCallback( text );
@@ -95,11 +95,16 @@ export default class TextWatcher {
 
 		if ( textHasMatch ) {
 			/**
-			 * Fired whenever the text watcher found a match.
+			 * Fired whenever the text watcher found a match for data changes.
 			 *
-			 * @event matched
+			 * @event matched:data
 			 */
-			this.fire( 'matched', { text } );
+			/**
+			 * Fired whenever the text watcher found a match for selection changes.
+			 *
+			 * @event matched:selection
+			 */
+			this.fire( `matched:${ suffix }`, { text } );
 		}
 	}
 
