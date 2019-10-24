@@ -9,9 +9,10 @@
 
 /* globals window, global */
 
-import { version } from 'ckeditor5/package.json';
+import CKEditorPackageConfig from 'ckeditor5/package.json';
 import CKEditorError from './ckeditorerror';
 
+const { version } = CKEditorPackageConfig;
 const windowOrGlobal = typeof window === 'object' ? window : global;
 
 if ( windowOrGlobal.CKEDITOR_VERSION ) {
