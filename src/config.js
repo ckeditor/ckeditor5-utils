@@ -109,8 +109,8 @@ export default class Config {
 	 * @param {String} name The configuration name. Configuration names are case-sensitive.
 	 * @returns {*} The configuration value or `undefined` if the configuration entry was not found.
 	 */
-	get( name ) {
-		return this._getFromSource( this._config, name );
+	get( name, defaultValue ) {
+		return this._getFromSource( this._config, name ) || defaultValue;
 	}
 
 	/**
