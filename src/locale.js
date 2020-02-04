@@ -78,17 +78,9 @@ export default class Locale {
 		/**
 		 * Translates the given string to the {@link #uiLanguage}.
 		 *
-		 * This method is also available in
-		 * {@link module:core/editor/editor~Editor#t} and {@link module:ui/view~View#t}.
-		 *
-		 * The string may contain placeholders (`%<index>`) for given dynamic values.
-		 * `<index>` is the index in the `values` array.
-		 *
-		 *		editor.t( 'Created file "%0" in %1ms', [ fileName, time ] );
-		 *
 		 * @method #t
 		 * @param {String} msgid The string to translate.
-		 * @param {String[]} [values] Values that should be used to interpolate the string.
+		 * @returns {Message}
 		 */
 		this.t = ( msgid, values ) => this._t( msgid, values );
 
@@ -97,48 +89,35 @@ export default class Locale {
 		 *
 		 * This method allows passing the context as the first argument.
 		 * A context is used to provide a description or example of how the translated string will be used.
-		 * An unique context makes the whole translation unique and should be presented to the translator.
-		 *
-		 * The string may contain placeholders (`%<index>`) for given dynamic values.
-		 * `<index>` is the index in the `values` array.
-		 *
-		 *		editor.ct( 'Created file "x"', 'file "%0"', [ fileName ] );
-		 *
-		 * If at least one of the placeholder values is not a string or number,
-		 * then an array of all the literal and dynamic parts will be returned
+		 * An unique context makes the whole translation unique.
 		 *
 		 * @method #ct
-		 * @template T
-		 * @param {string} msgctxt The context string.
-		 * @param {string} msgid The string to translate.
-		 * @param {T[]} [values] Values that should be used to interpolate the string.
-		 * @returns {T extends object ? Array<T | string> : string}
+		 * @param {String} msgctxt The context string.
+		 * @param {String} msgid The string to translate.
+		 * @returns {Message}
 		 */
-		this.ct = ( msgctxt, msgid, values ) => this._ct( msgctxt, msgid, values );
+		this.ct = ( msgctxt, msgid ) => this._ct( msgctxt, msgid );
 
 		/**
 		 * Translates the given plural string to the {@link #uiLanguage}.
 		 *
-		 * This method is also available in
-		 * {@link module:core/editor/editor~Editor#t} and {@link module:ui/view~View#t}.
-		 *
 		 * This method allows passing the context as the first argument.
 		 * A context is used to provide a description or example of how the translated string will be used.
-		 * An unique context makes the whole translation unique and should be presented to the translator.
+		 * An unique context makes the whole translation unique.
 		 *
-		 * The strings may contain a placeholder (`%0`) for a given dynamic value.
+		 * The strings may contain a placeholder (`#`) for a given dynamic quantity value.
 		 * The value is also used for selecting the correct plural form.
 		 *
-		 *		editor.ctn( 'Created n files', '%0 file' '%0 files' fileCount );
+		 *		ctn( 'Created # files', 'file', '# files', fileCount );
 		 *
 		 * @method #ctn
-		 * @param {string} msgctxt The context string.
-		 * @param {string} msgid Singular form of a string to translate.
-		 * @param {string} msgidPlural Plural form of a string to translate.
-		 * @param {number} value Value that should be used to interpolate the string.
-		 * @returns {string}
+		 * @param {String} msgctxt The context string.
+		 * @param {String} msgid Singular form of a string to translate.
+		 * @param {String} msgidPlural Plural form of a string to translate.
+		 * @param {Number} quantity
+		 * @returns {Message}
 		 */
-		this.ctn = ( msgctxt, msgid, msgidPlural, value ) => this._ctn( msgctxt, msgid, msgidPlural, value );
+		this.ctn = ( msgctxt, msgid, msgidPlural, quantity ) => this._ctn( msgctxt, msgid, msgidPlural, quantity );
 	}
 
 	/**
@@ -170,42 +149,31 @@ export default class Locale {
 	 * @private
 	 */
 	_t( msgid = '', values = [] ) {
-		return translate( this.uiLanguage, msgid )
-			.replace( /%(\d+)/g, ( match, idx ) => values[ idx ] );
+		const translation = translate( this.uiLanguage, msgid );
+		const message = new Message( translation );
+		return message.format( ...values );
 	}
 
 	/**
 	 * Base for the {@link #ct} method.
 	 * @private
 	 */
-	_ct( msgctxt = '', msgid = '', values = [] ) {
-		const msg = translate( this.uiLanguage, `${ msgid } [context: ${ msgctxt }]` );
-		const regex = /%(\d+)/g;
-		const parts = [];
-
-		while ( true ) {
-			const prevIndex = regex.lastIndex;
-			const match = regex.exec( msg );
-			if ( match == null ) {
-				parts.push( msg.substring( prevIndex ) );
-				break;
-			}
-			parts.push( msg.substring( prevIndex, match.index ) );
-			parts.push( values[ match[ 1 ] ] );
-		}
-
-		if ( values.some( value => typeof value == 'object' ) ) {
-			return parts;
-		}
-		return parts.join( '' );
+	_ct( msgctxt = '', msgid = '' ) {
+		const translation = translate( this.uiLanguage, `${ msgid } [context: ${ msgctxt }]` );
+		return new Message( translation );
 	}
 
 	/**
 	 * Base for the {@link #ctn} method.
 	 * @private
 	 */
-	_ctn( msgctxt = '', msgid = '', msgidPlural = '', value = 0 ) {
-		return this._ct( msgctxt, value == 1 ? msgid : msgidPlural, [ value ] );
+	_ctn( msgctxt = '', msgid = '', msgidPlural = '', quantity = 1 ) {
+		let translation = translate(
+			this.uiLanguage,
+			`${ quantity == 1 ? msgid : msgidPlural } [context: ${ msgctxt }]`
+		);
+		translation = translation.replace( /#/g, quantity );
+		return new Message( translation );
 	}
 }
 
@@ -215,4 +183,86 @@ export default class Locale {
 // @returns {String} 'ltr' or 'rtl
 function getLanguageDirection( languageCode ) {
 	return RTL_LANGUAGE_CODES.includes( languageCode ) ? 'rtl' : 'ltr';
+}
+
+/**
+ * A translated message returned from one of the {@link Locale}'s methods.
+ */
+export class Message {
+	/**
+	 * @hidden
+	 * @param {String} message
+	 */
+	constructor( message ) {
+		/**
+		 * @readonly
+		 * @member {String}
+		 */
+		this.message = String( message );
+	}
+
+	/**
+	 * Get the message as a string without any transformations
+	 * @returns {String}
+	 */
+	toString() {
+		return this.message;
+	}
+
+	/**
+	 * Get the interpolated message as string.
+	 * This method will replace the placeholders in the message with provided values.
+	 *
+	 * @example
+	 *
+	 * 		const msg = ct( 'Replace text', 'Replace %0 with %1' )
+	 * 			.format( 'foo', 'bar' )
+	 *
+	 * 		expect( msg ).to.equal( 'Replace foo with bar' )
+	 *
+	 * @param {...String} values
+	 * @returns {String} The interpolated message
+	 */
+	format( ...values ) {
+		return this.message.replace( /%(\d+)/g, ( match, index ) => values[ parseInt( index, 10 ) ] );
+	}
+
+	/**
+	 * Get the interpolated message as an array of static and dynamic parts.
+	 * This method splits the message at every placeholder
+	 * and returns an array of the original string parts with provided values interspersed.
+	 * The values can be of any type and won't be stringified.
+	 *
+	 * @example
+	 *
+	 * 		const msg = ct( 'Replace text', 'Replace %0 with %1' )
+	 * 			.formatToParts( 'foo', 'bar' )
+	 *
+	 * 		expect( msg ).to.equal( [ 'Replace ', 'foo', ' with ', 'bar' ] )
+	 *
+	 * @template T
+	 * @param {...T} values
+	 * @returns {Array.<T|String>} The array of interpolated message parts
+	 */
+	formatToArray( ...values ) {
+		const regex = /%(\d+)/g;
+		const parts = [];
+
+		while ( true ) {
+			const prevIndex = regex.lastIndex;
+			const match = regex.exec( this.message );
+			if ( match == null ) {
+				parts.push( this.message.substring( prevIndex ) );
+				break;
+			}
+			parts.push( this.message.substring( prevIndex, match.index ) );
+			parts.push( values[ parseInt( match[ 1 ], 10 ) ] );
+		}
+
+		return parts;
+	}
+
+	* [ Symbol.iterator ]() {
+		yield* this.formatToArray();
+	}
 }
