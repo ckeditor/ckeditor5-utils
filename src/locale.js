@@ -80,7 +80,7 @@ export default class Locale {
 		 *
 		 * @method #t
 		 * @param {String} msgid The string to translate.
-		 * @returns {Message}
+		 * @returns {String}
 		 */
 		this.t = ( msgid, values ) => this._t( msgid, values );
 
@@ -238,31 +238,48 @@ export class Message {
 	 * 		const msg = ct( 'Replace text', 'Replace %0 with %1' )
 	 * 			.formatToParts( 'foo', 'bar' )
 	 *
-	 * 		expect( msg ).to.equal( [ 'Replace ', 'foo', ' with ', 'bar' ] )
+	 * 		expect( msg ).to.equal( [
+	 * 			{ part: 'literal', value: 'Replace ' },
+	 * 			{ part: 'value', value: 'foo' },
+	 * 			{ part: 'literal', value: ' with ' },
+	 * 			{ part: 'value', value: 'bar' },
+	 * 		] )
 	 *
 	 * @template T
 	 * @param {...T} values
-	 * @returns {Array.<T|String>} The array of interpolated message parts
+	 * @returns {Array.<Part.<T>>} The array of interpolated message parts
 	 */
-	formatToArray( ...values ) {
+	formatToParts( ...values ) {
 		const regex = /%(\d+)/g;
+
+		/** @type {Part<T>[]} */
 		const parts = [];
 
 		while ( true ) {
 			const prevIndex = regex.lastIndex;
 			const match = regex.exec( this.message );
 			if ( match == null ) {
-				parts.push( this.message.substring( prevIndex ) );
+				parts.push( {
+					part: 'literal',
+					value: this.message.substring( prevIndex )
+				} );
 				break;
 			}
-			parts.push( this.message.substring( prevIndex, match.index ) );
-			parts.push( values[ parseInt( match[ 1 ], 10 ) ] );
+			parts.push( {
+				part: 'literal',
+				value: this.message.substring( prevIndex, match.index )
+			} );
+			parts.push( {
+				part: 'value',
+				value: values[ parseInt( match[ 1 ], 10 ) ]
+			} );
 		}
 
 		return parts;
 	}
-
-	* [ Symbol.iterator ]() {
-		yield* this.formatToArray();
-	}
 }
+
+/**
+ * @template T
+ * @typedef {{ part: 'literal', value: string } | { part: 'value', value: T }} Part
+ */
