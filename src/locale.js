@@ -9,7 +9,7 @@
 
 /* globals console */
 
-import { translate } from './translation-service';
+import { translate, translatePlural } from './translation-service';
 
 const RTL_LANGUAGE_CODES = [ 'ar', 'fa', 'he', 'ku', 'ug' ];
 
@@ -79,10 +79,10 @@ export default class Locale {
 		 * Translates the given string to the {@link #uiLanguage}.
 		 *
 		 * @method #t
-		 * @param {String} msgid The string to translate.
+		 * @param {String} msgId The string to translate.
 		 * @returns {String}
 		 */
-		this.t = ( msgid, values ) => this._t( msgid, values );
+		this.t = ( msgId, values ) => this._t( msgId, values );
 
 		/**
 		 * Translates the given string to the {@link #uiLanguage}.
@@ -91,12 +91,14 @@ export default class Locale {
 		 * A context is used to provide a description or example of how the translated string will be used.
 		 * An unique context makes the whole translation unique.
 		 *
+		 * `ct` stands for context translation
+		 *
 		 * @method #ct
-		 * @param {String} msgctxt The context string.
-		 * @param {String} msgid The string to translate.
+		 * @param {String} msgCtx The context string.
+		 * @param {String} msgId The string to translate.
 		 * @returns {Message}
 		 */
-		this.ct = ( msgctxt, msgid ) => this._ct( msgctxt, msgid );
+		this.ct = ( msgCtx, msgId ) => this._ct( msgCtx, msgId );
 
 		/**
 		 * Translates the given plural string to the {@link #uiLanguage}.
@@ -108,16 +110,18 @@ export default class Locale {
 		 * The strings may contain a placeholder (`#`) for a given dynamic quantity value.
 		 * The value is also used for selecting the correct plural form.
 		 *
-		 *		ctn( 'Created # files', 'file', '# files', fileCount );
+		 *		ctq( 'Created # files', 'file', '# files', fileCount );
 		 *
-		 * @method #ctn
-		 * @param {String} msgctxt The context string.
-		 * @param {String} msgid Singular form of a string to translate.
-		 * @param {String} msgidPlural Plural form of a string to translate.
+		 * `ctq` stands for context translation quantity
+		 *
+		 * @method #ctq
+		 * @param {String} msgCtx The context string.
+		 * @param {String} msgId Singular form of a string to translate.
+		 * @param {String} msgIdPlural Plural form of a string to translate.
 		 * @param {Number} quantity
 		 * @returns {Message}
 		 */
-		this.ctn = ( msgctxt, msgid, msgidPlural, quantity ) => this._ctn( msgctxt, msgid, msgidPlural, quantity );
+		this.ctq = ( msgCtx, msgId, msgIdPlural, quantity ) => this._ctq( msgCtx, msgId, msgIdPlural, quantity );
 	}
 
 	/**
@@ -148,8 +152,8 @@ export default class Locale {
 	 * Base for the {@link #t} method.
 	 * @private
 	 */
-	_t( msgid = '', values = [] ) {
-		const translation = translate( this.uiLanguage, msgid );
+	_t( msgId = '', values = [] ) {
+		const translation = translate( this.uiLanguage, undefined, msgId );
 		const message = new Message( translation );
 		return message.format( ...values );
 	}
@@ -158,21 +162,17 @@ export default class Locale {
 	 * Base for the {@link #ct} method.
 	 * @private
 	 */
-	_ct( msgctxt = '', msgid = '' ) {
-		const translation = translate( this.uiLanguage, `${ msgid } [context: ${ msgctxt }]` );
+	_ct( msgCtx = '', msgId = '' ) {
+		const translation = translate( this.uiLanguage, msgCtx, msgId );
 		return new Message( translation );
 	}
 
 	/**
-	 * Base for the {@link #ctn} method.
+	 * Base for the {@link #ctq} method.
 	 * @private
 	 */
-	_ctn( msgctxt = '', msgid = '', msgidPlural = '', quantity = 1 ) {
-		let translation = translate(
-			this.uiLanguage,
-			`${ quantity == 1 ? msgid : msgidPlural } [context: ${ msgctxt }]`
-		);
-		translation = translation.replace( /#/g, quantity );
+	_ctq( msgCtx = '', msgId = '', msgIdPlural = '', quantity = 1 ) {
+		const translation = translatePlural( this.uiLanguage, msgCtx, msgId, msgIdPlural, quantity );
 		return new Message( translation );
 	}
 }
