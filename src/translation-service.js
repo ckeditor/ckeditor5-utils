@@ -161,7 +161,7 @@ export function translatePlural( language, msgCtx, msgId, msgIdPlural, quantity 
 	let number;
 	if ( Intl.NumberFormat != null ) {
 		const formatter = new Intl.NumberFormat( language );
-		number = formatter.format( number );
+		number = formatter.format( quantity );
 	} else {
 		number = String( quantity );
 	}
