@@ -72,13 +72,23 @@ function getMessage( language, msgCtx, msgId ) {
 	const localeData = window.CKEDITOR_TRANSLATIONS[ language ];
 	if ( localeData != null ) {
 		let key = String( msgId ).toLowerCase();
-		if ( msgCtx !== null ) {
+		if ( msgCtx != null ) {
 			key = `${ String( msgCtx ).toLowerCase() }|${ key }`;
 		}
 
 		const message = localeData[ key ];
 		if ( message != null ) {
 			return message;
+		}
+
+		// Fall back to the old behavior where context was not used
+		if ( msgCtx == null ) {
+			for ( const localeKey in localeData ) {
+				const localeKeyMatch = localeKey.match( /^(.+)\|(.+)$/ );
+				if ( localeKeyMatch != null && localeKeyMatch[ 2 ] == key ) {
+					return localeData[ localeKey ];
+				}
+			}
 		}
 	}
 
