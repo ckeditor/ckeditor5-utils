@@ -76,6 +76,10 @@ function getMessage( language, msgCtx, msgId ) {
 
 	const localeData = window.CKEDITOR_TRANSLATIONS[ language ];
 	if ( localeData != null ) {
+		if ( msgId == 'PLURAL_FORMS' ) {
+			return localeData.PLURAL_FORMS || 'nplurals = 2; plural = (n != 1);';
+		}
+
 		let key = String( msgId ).toLowerCase();
 		if ( msgCtx != null ) {
 			key = `${ String( msgCtx ).toLowerCase() }|${ key }`;
@@ -195,9 +199,10 @@ export function translatePlural( language, msgCtx, msgId, msgIdPlural, quantity 
 function getPluralFormSelector( language ) {
 	const pluralFormsString = getMessage( language, undefined, 'PLURAL_FORMS' );
 
-	const pluralFormsMatch = pluralFormsString.match(
+	const pluralFormsMatch =
 		/\s*nplurals\s*=\s*\d+\s*;\s*plural\s*=\s*([-+*/!=<>%&|?:.n\d\s]+);?\s*$/i
-	);
+			.exec( pluralFormsString );
+
 	if ( pluralFormsMatch != null ) {
 		const [ , pluralFormula ] = pluralFormsMatch;
 
