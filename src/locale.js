@@ -224,7 +224,7 @@ export class Message {
 	 * @returns {String} The interpolated message
 	 */
 	format( ...values ) {
-		return this.message.replace( /%(\d+)/g, ( match, index ) => values[ parseInt( index, 10 ) ] );
+		return this.message.replace( /%(\d+)/g, ( match, index ) => values[ parseInt( index, 10 ) ] || `%${ index }` );
 	}
 
 	/**

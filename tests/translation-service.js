@@ -11,64 +11,46 @@ describe( 'translation-service', () => {
 	} );
 
 	it( 'should return english string if no translation exists', () => {
-		const translation = translate( 'pl', 'Bold' );
-
-		expect( translation ).to.be.equal( 'Bold' );
-	} );
-
-	it( 'should return english string without context if no translation exists', () => {
-		const translation = translate( 'pl', 'Bold [context: bold]' );
+		const translation = translate( 'pl', undefined, 'Bold' );
 
 		expect( translation ).to.be.equal( 'Bold' );
 	} );
 
 	it( 'should return translation if the translation for the concrete language is defined', () => {
 		add( 'pl', {
-			'OK': 'OK',
-			'Cancel [context: reject]': 'Anuluj'
+			'ok': 'OK',
+			'cancel': 'Anuluj'
 		} );
 
-		const translation = translate( 'pl', 'Cancel [context: reject]' );
+		const translation = translate( 'pl', undefined, 'Cancel' );
 
 		expect( translation ).to.be.equal( 'Anuluj' );
 	} );
 
-	it( 'should return english string without context if the translations for the concrete language exist, ' +
-		'but translation doesn\'t', () => {
-		add( 'pl', {
-			'OK': 'OK',
-			'Cancel [context: reject]': 'Anuluj'
-		} );
-
-		const translation = translate( 'pl', 'Bold [context: bold]' );
-
-		expect( translation ).to.be.equal( 'Bold' );
-	} );
-
 	it( 'should use provided language if only one is provided', () => {
 		add( 'pl', {
-			'OK': 'OK',
-			'Cancel [context: reject]': 'Anuluj'
+			'ok': 'OK',
+			'cancel': 'Anuluj'
 		} );
 
-		const translation = translate( 'de', 'Cancel [context: reject]' );
+		const translation = translate( 'de', undefined, 'cancel' );
 
 		expect( translation ).to.be.equal( 'Anuluj' );
 	} );
 
 	it( 'should be able to merge translations', () => {
 		add( 'pl', {
-			'OK': 'OK',
-			'Cancel [context: reject]': 'Anuluj'
+			'ok': 'OK',
+			'cancel': 'Anuluj'
 		} );
 
 		add( 'en_US', {
-			'OK': 'OK',
-			'Cancel [context: reject]': 'Cancel'
+			'ok': 'OK',
+			'cancel': 'Cancel'
 		} );
 
-		const translationPL = translate( 'pl', 'Cancel [context: reject]' );
-		const translationEN = translate( 'en', 'Cancel [context: reject]' );
+		const translationPL = translate( 'pl', undefined, 'Cancel' );
+		const translationEN = translate( 'en', undefined, 'Cancel' );
 
 		expect( translationPL ).to.be.equal( 'Anuluj' );
 		expect( translationEN ).to.be.equal( 'Cancel' );

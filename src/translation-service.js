@@ -69,6 +69,11 @@ export function add( language, messages ) {
  * @returns {String | Array.<String> | null} The localized message(s) if they exist.
  */
 function getMessage( language, msgCtx, msgId ) {
+	const languages = Object.keys( window.CKEDITOR_TRANSLATIONS );
+	if ( languages.length === 1 ) {
+		language = languages[ 0 ];
+	}
+
 	const localeData = window.CKEDITOR_TRANSLATIONS[ language ];
 	if ( localeData != null ) {
 		let key = String( msgId ).toLowerCase();
@@ -169,8 +174,8 @@ export function translatePlural( language, msgCtx, msgId, msgIdPlural, quantity 
 
 	// Format the number
 	let number;
-	if ( Intl.NumberFormat != null ) {
-		const formatter = new Intl.NumberFormat( language );
+	if ( window.Intl != null && window.Intl.NumberFormat != null ) {
+		const formatter = new window.Intl.NumberFormat( language );
 		number = formatter.format( quantity );
 	} else {
 		number = String( quantity );
