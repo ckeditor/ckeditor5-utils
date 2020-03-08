@@ -25,18 +25,56 @@ describe( 'Collection', () => {
 	} );
 
 	describe( 'constructor()', () => {
-		it( 'allows to change the id property used by the collection', () => {
-			const item1 = { id: 'foo', name: 'xx' };
-			const item2 = { id: 'foo', name: 'yy' };
-			const collection = new Collection( { idProperty: 'name' } );
-
-			collection.add( item1 );
-			collection.add( item2 );
+		it( 'allows setting initial collection items', () => {
+			const item1 = getItem( 'foo' );
+			const item2 = getItem( 'bar' );
+			const collection = new Collection( [ item1, item2 ] );
 
 			expect( collection ).to.have.length( 2 );
 
-			expect( collection.get( 'xx' ) ).to.equal( item1 );
-			expect( collection.remove( 'yy' ) ).to.equal( item2 );
+			expect( collection.get( 0 ) ).to.equal( item1 );
+			expect( collection.get( 1 ) ).to.equal( item2 );
+			expect( collection.get( 'foo' ) ).to.equal( item1 );
+			expect( collection.get( 'bar' ) ).to.equal( item2 );
+		} );
+
+		it( 'does not use the initial items array internally', () => {
+			const item1 = getItem( 'foo' );
+			const item2 = getItem( 'bar' );
+			const initialItems = [ item1, item2 ];
+			const collection = new Collection( initialItems );
+
+			initialItems.pop();
+
+			expect( collection.get( 0 ) ).to.equal( item1 );
+			expect( collection.get( 1 ) ).to.equal( item2 );
+		} );
+
+		describe( 'options', () => {
+			it( 'allow to change the id property used by the collection', () => {
+				const item1 = { id: 'foo', name: 'xx' };
+				const item2 = { id: 'foo', name: 'yy' };
+				const collection = new Collection( { idProperty: 'name' } );
+
+				collection.add( item1 );
+				collection.add( item2 );
+
+				expect( collection ).to.have.length( 2 );
+
+				expect( collection.get( 'xx' ) ).to.equal( item1 );
+				expect( collection.remove( 'yy' ) ).to.equal( item2 );
+			} );
+
+			it( 'allow to change the id property used by the collection (initial items)', () => {
+				const item1 = { id: 'foo', name: 'xx' };
+				const item2 = { id: 'foo', name: 'yy' };
+				const collection = new Collection( [ item1, item2 ], { idProperty: 'name' } );
+
+				expect( collection ).to.have.length( 2 );
+
+				expect( collection.get( 'xx' ) ).to.equal( item1 );
+				expect( collection.remove( 'yy' ) ).to.equal( item2 );
+			} );
 		} );
 	} );
 
@@ -297,6 +335,75 @@ describe( 'Collection', () => {
 			collection.add( item, 1 );
 
 			sinon.assert.calledWithExactly( spy, sinon.match.has( 'source', collection ), item, 1 );
+		} );
+
+		describe( 'with multiple items', () => {
+			it( 'adds multiple items to the collection', () => {
+				const collection = new Collection();
+				const item1 = getItem( 'foo' );
+				const item2 = getItem( 'bar' );
+
+				collection.add( item1, item2 );
+
+				expect( collection ).to.have.length( 2 );
+				expect( collection.get( 0 ) ).to.equal( item1 );
+				expect( collection.get( 1 ) ).to.equal( item2 );
+				expect( collection.get( 'foo' ) ).to.equal( item1 );
+				expect( collection.get( 'bar' ) ).to.equal( item2 );
+			} );
+
+			it( 'adds multiple items to the collection (pushing)', () => {
+				const collection = new Collection( [ getItem( 'first' ) ] );
+				const item1 = getItem( 'foo' );
+				const item2 = getItem( 'bar' );
+
+				collection.add( item1, item2 );
+
+				expect( collection ).to.have.length( 3 );
+				expect( collection.get( 0 ).id ).to.equal( 'first' );
+				expect( collection.get( 1 ) ).to.equal( item1 );
+				expect( collection.get( 2 ) ).to.equal( item2 );
+				expect( collection.get( 'foo' ) ).to.equal( item1 );
+				expect( collection.get( 'bar' ) ).to.equal( item2 );
+			} );
+
+			it( 'adds multiple items to the collection at specific position', () => {
+				const first = getItem( 'first' );
+				const last = getItem( 'last' );
+
+				const collection = new Collection( [
+					first,
+					last
+				] );
+
+				const item1 = getItem( 'foo' );
+				const item2 = getItem( 'bar' );
+
+				collection.add( item1, item2, 1 );
+
+				expect( collection ).to.have.length( 4 );
+				expect( collection.get( 0 ) ).to.equal( first );
+				expect( collection.get( 1 ) ).to.equal( item1 );
+				expect( collection.get( 2 ) ).to.equal( item2 );
+				expect( collection.get( 3 ) ).to.equal( last );
+
+				expect( collection.get( 'foo' ) ).to.equal( item1 );
+				expect( collection.get( 'bar' ) ).to.equal( item2 );
+			} );
+
+			it( 'fires #add for all new items', () => {
+				const spy = sinon.spy();
+				const collection = new Collection( [ getItem( 'first' ) ] );
+				const item1 = getItem( 'foo' );
+				const item2 = getItem( 'bar' );
+
+				collection.on( 'add', spy );
+				collection.add( item1, item2 );
+
+				sinon.assert.calledTwice( spy );
+				sinon.assert.calledWithExactly( spy.firstCall, sinon.match.has( 'source', collection ), item1, 1 );
+				sinon.assert.calledWithExactly( spy.secondCall, sinon.match.has( 'source', collection ), item2, 2 );
+			} );
 		} );
 	} );
 

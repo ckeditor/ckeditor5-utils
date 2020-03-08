@@ -28,17 +28,54 @@ export default class Collection {
 	/**
 	 * Creates a new Collection instance.
 	 *
-	 * @param {Object} [options={}] The options object.
-	 * @param {String} [options.idProperty='id'] The name of the property which is considered to identify an item.
+	 * You can provide an array of initial items the collection will be created with:
+	 *
+	 *		const collection = new Collection( [ { id: 'John' }, { id: 'Mike' } ] );
+	 *
+	 *		console.log( collection.get( 0 ) ); // -> { id: 'John' }
+	 *		console.log( collection.get( 1 ) ); // -> { id: 'Mike' }
+	 *		console.log( collection.get( 'Mike' ) ); // -> { id: 'Mike' }
+	 *
+	 * Or you can first create a collection and then add new items using the {@link #add} method:
+	 *
+	 *		const collection = new Collection();
+	 *
+	 *		collection.add( { id: 'John' } );
+	 *		console.log( collection.get( 0 ) ); // -> { id: 'John' }
+	 *
+	 * Whatever option you choose, you can always pass a configuration object as the last argument
+	 * of the constructor:
+	 *
+	 *		const emptyCollection = new Collection( { idProperty: 'name' } );
+	 *		emptyCollection.add( { name: 'John' } );
+	 *		console.log( collection.get( 'John' ) ); // -> { name: 'John' }
+	 *
+	 *		const nonEmptyCollection = new Collection( [ { name: 'John' } ], { idProperty: 'name' } );
+	 *		nonEmptyCollection.add( { name: 'George' } );
+	 *		console.log( collection.get( 'George' ) ); // -> { name: 'George' }
+	 *
+	 * @param {Array.<Object>|Object} [initialItemsOrOptions] The initial items of the collection or
+	 * the options object.
+	 * @param {Object} [options={}] The options object, when the first argument is an array of initial items.
+	 * @param {String} [options.idProperty='id'] The name of the property which is used to identify an item.
+	 * Items that do not have such a property will be assigned one when added to the collection.
 	 */
-	constructor( options = {} ) {
+	constructor( initialItemsOrOptions = {}, options = {} ) {
+		let initialItems = [];
+
+		if ( initialItemsOrOptions instanceof Array ) {
+			initialItems = initialItemsOrOptions;
+		} else {
+			options = initialItemsOrOptions;
+		}
+
 		/**
 		 * The internal list of items in the collection.
 		 *
 		 * @private
 		 * @member {Object[]}
 		 */
-		this._items = [];
+		this._items = [ ...initialItems ];
 
 		/**
 		 * The internal map of items in the collection.
@@ -88,6 +125,11 @@ export default class Collection {
 		 */
 		this._skippedIndexesFromExternal = [];
 
+		// Set the initial content of the collection (if provided in the constructor).
+		for ( const item of initialItems ) {
+			this._itemMap.set( this._getItemIdBeforeAdding( item ), item );
+		}
+
 		/**
 		 * A collection instance this collection is bound to as a result
 		 * of calling {@link #bindTo} method.
@@ -125,61 +167,72 @@ export default class Collection {
 	}
 
 	/**
-	 * Adds an item into the collection.
+	 * Adds an item or multiple items into the collection.
 	 *
-	 * If the item does not have an id, then it will be automatically generated and set on the item.
+	 *		const collection = new Collection();
+	 *
+	 *		collection.add( { id: 'John' } );
+	 *		collection.add( { id: 'Anna' }, { id: 'George' } );
+	 *
+	 *		console.log( collection.length ); // -> 3
+	 *		console.log( collection.get( 2 ) ); // -> { name: 'George' }
+	 *
+	 * You can specify the index of the item (or items) when adding to the collection:
+	 *
+	 *		const collection = new Collection();
+	 *
+	 *		collection.add( { id: 'John' } );
+	 *		collection.add( { id: 'Bob' }, 0 );
+	 *		collection.add( { id: 'Anna' }, { id: 'George' }, 1 );
+	 *
+	 *		console.log( collection.get( 0 ) ); // -> { name: 'Bob' }
+	 *		console.log( collection.get( 1 ) ); // -> { name: 'Anna' }
+	 *		console.log( collection.get( 2 ) ); // -> { name: 'George' }
+	 *		console.log( collection.get( 3 ) ); // -> { name: 'John' }
+	 *
+	 * **Note**: If an item does not have an id, it will be automatically given one (see {@link #constructor}).
 	 *
 	 * @chainable
-	 * @param {Object} item
-	 * @param {Number} [index] The position of the item in the collection. The item
-	 * is pushed to the collection when `index` not specified.
+	 * @param {...(Object)} items Item or items to be added to the collection.
+	 * @param {Number} [index] The position of the item (or items) when added to the collection. If not specified,
+	 * the item (or items) is pushed to the collection.
 	 * @fires add
 	 */
-	add( item, index ) {
-		let itemId;
-		const idProperty = this._idProperty;
+	add( ...args ) {
+		let addIndex = args[ args.length - 1 ];
+		const items = args;
 
-		if ( ( idProperty in item ) ) {
-			itemId = item[ idProperty ];
-
-			if ( typeof itemId != 'string' ) {
+		// E.g. add( { ... }, { ... }, ..., 3 )
+		if ( typeof addIndex === 'number' ) {
+			if ( addIndex > this._items.length || addIndex < 0 ) {
 				/**
-				 * This item's id should be a string.
+				 * The index number has invalid value.
 				 *
-				 * @error collection-add-invalid-id
+				 * @error collection-add-item-bad-index
+				 * @param {Number} index The index at which the item is to be added.
+				 * @param {module:utils/collection~Collection} collection The collection the item is added to.
 				 */
-				throw new CKEditorError( 'collection-add-invalid-id', this );
+				throw new CKEditorError( 'collection-add-item-invalid-index', {
+					index: addIndex,
+					collection: this
+				} );
 			}
 
-			if ( this.get( itemId ) ) {
-				/**
-				 * This item already exists in the collection.
-				 *
-				 * @error collection-add-item-already-exists
-				 */
-				throw new CKEditorError( 'collection-add-item-already-exists', this );
-			}
-		} else {
-			item[ idProperty ] = itemId = uid();
+			// The last argument was an index, remove it from the items.
+			items.pop();
 		}
 
-		// TODO: Use ES6 default function argument.
-		if ( index === undefined ) {
-			index = this._items.length;
-		} else if ( index > this._items.length || index < 0 ) {
-			/**
-			 * The index number has invalid value.
-			 *
-			 * @error collection-add-item-bad-index
-			 */
-			throw new CKEditorError( 'collection-add-item-invalid-index', this );
+		// E.g. add( { ... }, { ... } )
+		else {
+			addIndex = this._items.length;
 		}
 
-		this._items.splice( index, 0, item );
+		this._items.splice( addIndex, 0, ...items );
 
-		this._itemMap.set( itemId, item );
-
-		this.fire( 'add', item, index );
+		items.forEach( ( item, itemIndex ) => {
+			this._itemMap.set( this._getItemIdBeforeAdding( item ), item );
+			this.fire( 'add', item, addIndex + itemIndex );
+		} );
 
 		return this;
 	}
@@ -602,6 +655,55 @@ export default class Collection {
 				return result;
 			}, [] );
 		} );
+	}
+
+	/**
+	 * For a given item to be added to the collection, it validates item's "id" property or generates
+	 * a new one if missing. If the validation was successful or a new id was generated,
+	 * the id is returned by the method. Otherwise, an error is thrown.
+	 *
+	 * @private
+	 * @param {Object} item An item to be added to the collection.
+	 */
+	_getItemIdBeforeAdding( item ) {
+		const idProperty = this._idProperty;
+		let itemId;
+
+		if ( ( idProperty in item ) ) {
+			itemId = item[ idProperty ];
+
+			if ( typeof itemId != 'string' ) {
+				/**
+				 * This item's id should be a string.
+				 *
+				 * @error collection-add-invalid-id
+				 * @param {Object} item The item being added to the collection.
+				 * @param {module:utils/collection~Collection} collection The collection the item is added to.
+				 */
+				throw new CKEditorError( 'collection-add-invalid-id', {
+					item,
+					collection: this,
+				} );
+			}
+
+			if ( this.get( itemId ) ) {
+				/**
+				 * This item already exists in the collection.
+				 *
+				 * @error collection-add-item-already-exists
+				 * @param {Object} item The item being added to the collection.
+				 * @param {module:utils/collection~Collection} collection The collection the item is added to.
+				 */
+				throw new CKEditorError( 'collection-add-item-already-exists', {
+					item,
+					collection: this
+				} );
+			}
+		} else {
+			item[ idProperty ] = itemId = uid();
+		}
+
+		return itemId;
 	}
 
 	/**
