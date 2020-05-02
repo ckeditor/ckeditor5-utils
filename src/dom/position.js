@@ -10,6 +10,7 @@
 import global from './global';
 import Rect from './rect';
 import getPositionedAncestor from './getpositionedancestor';
+import getAncestorWithOveflow from './getancestorwithoverflow';
 import getBorderWidths from './getborderwidths';
 import { isFunction } from 'lodash-es';
 
@@ -101,7 +102,33 @@ export function getOptimalPosition( { element, target, positions, limiter, fitIn
 	if ( !limiter && !fitInViewport ) {
 		[ bestPositionName, bestPositionRect ] = getPositionNameAndRect( positions[ 0 ], targetRect, elementRect );
 	} else {
-		const limiterRect = limiter && new Rect( limiter ).getVisible();
+		let limiterRect;
+
+		if ( limiter ) {
+			limiterRect = new Rect( limiter ).getVisible();
+		}
+
+		const ancestorWithOveflow = getAncestorWithOveflow( element.parentElement );
+
+		// Limiter or not, there could be some ancestor down the DOM tree that has `overflow` other
+		// than `visible`. The algorithm must consider that to make sure the positioned element
+		// does not get cropped by that ancestor ✂️.
+		// https://github.com/ckeditor/ckeditor5-ui/issues/515
+		if ( ancestorWithOveflow ) {
+			const ancestorWithOveflowRect = new Rect( ancestorWithOveflow );
+
+			// Fitting into the limiter does not constitute a good position.
+			// Use that portion of the limiter Rect that is cropped by the ancestor with `overflow`.
+			if ( limiterRect ) {
+				limiterRect = limiterRect.getIntersection( ancestorWithOveflowRect );
+			}
+			// There's no configured limiter element but since there is an ancestor with `overflow`,
+			// well... it becomes the limiter.
+			else {
+				limiterRect = ancestorWithOveflowRect;
+			}
+		}
+
 		const viewportRect = fitInViewport && new Rect( global.window );
 		const bestPosition = getBestPositionNameAndRect( positions, { targetRect, elementRect, limiterRect, viewportRect } );
 
